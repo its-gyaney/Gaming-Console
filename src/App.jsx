@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import './birdstorm.css'
 import './snake-controls.css'
+import './breaker-controls.css'
 
 const games = [
   { id: 'snake', icon: '◈', title: 'Neon Snake', tag: 'ARCADE', description: 'Eat, grow, and avoid the edge.', color: '#b5ff45' },
@@ -60,9 +61,11 @@ function Snake({ onScore }) {
 function Breaker({ onScore }) {
   const [state, setState] = useState({ paddle: 42, ball: [50, 75, 1.1, -1.25], bricks: Array.from({length:28}, (_,i)=>i), score: 0, live: false, message: 'READY?' })
   const reset = () => setState({ paddle: 42, ball: [50,75,1.1,-1.25], bricks: Array.from({length:28}, (_,i)=>i), score:0, live:true, message:'' })
+  const movePaddle = (amount) => setState(s => ({ ...s, paddle: Math.max(0, Math.min(84, s.paddle + amount)) }))
+  const touchPaddle = (event) => { const rect = event.currentTarget.getBoundingClientRect(); const paddle = Math.max(0, Math.min(84, ((event.clientX - rect.left) / rect.width * 100) - 8)); setState(s => s.live ? { ...s, paddle } : s) }
   useEffect(() => { const move=e => { if(['ArrowLeft','a','ArrowRight','d'].includes(e.key)) {e.preventDefault();setState(s=>({...s,paddle:Math.max(0,Math.min(84,s.paddle+(e.key==='ArrowLeft'||e.key==='a'?-8:8)))}))} };window.addEventListener('keydown',move);return()=>window.removeEventListener('keydown',move)},[])
   useEffect(() => { if(!state.live) return; const tick=setInterval(()=>setState(s=>{let [x,y,dx,dy]=s.ball; x+=dx;y+=dy;if(x<1||x>99)dx*=-1;if(y<1){dy*=-1;y=1}if(y>84&&y<89&&x>=s.paddle&&x<=s.paddle+16)dy=-Math.abs(dy);if(y>100){onScore('breaker',s.score);return{...s,live:false,message:'GAME OVER'}}let hit=-1;for(const b of s.bricks){const bx=(b%7)*14+1,by=Math.floor(b/7)*9+4;if(x>=bx&&x<=bx+12&&y>=by&&y<=by+7){hit=b;dy*=-1;break}}if(hit>=0){const bricks=s.bricks.filter(b=>b!==hit),score=s.score+10;if(!bricks.length){onScore('breaker',score);return{...s,bricks,score,live:false,message:'DECK CLEARED!'}}return{...s,ball:[x,y,dx,dy],bricks,score}}return{...s,ball:[x,y,dx,dy]}}),25);return()=>clearInterval(tick)},[state.live,onScore])
-  return <GameFrame title="BRICK BLITZ" subtitle="ARROW KEYS / A D TO MOVE" score={state.score} onStart={reset} action={state.live?'RESTART':state.message==='GAME OVER'?'PLAY AGAIN':'LAUNCH'}><div className="breaker-board">{state.bricks.map(b=><i key={b} className="brick" style={{left:`${(b%7)*14+1}%`,top:`${Math.floor(b/7)*9+4}%`}}/>)}<i className="ball" style={{left:`${state.ball[0]}%`,top:`${state.ball[1]}%`}}/><i className="paddle" style={{left:`${state.paddle}%`}}/>{state.message&&<div className="game-over">{state.message}</div>}</div></GameFrame>
+  return <GameFrame title="BRICK BLITZ" subtitle="ARROW KEYS / A D / TOUCH TO MOVE" score={state.score} onStart={reset} action={state.live?'RESTART':state.message==='GAME OVER'?'PLAY AGAIN':'LAUNCH'}><div className="breaker-board" onPointerDown={touchPaddle} onPointerMove={event => { if (event.buttons) touchPaddle(event) }}>{state.bricks.map(b=><i key={b} className="brick" style={{left:`${(b%7)*14+1}%`,top:`${Math.floor(b/7)*9+4}%`}}/>)}<i className="ball" style={{left:`${state.ball[0]}%`,top:`${state.ball[1]}%`}}/><i className="paddle" style={{left:`${state.paddle}%`}}/>{state.message&&<div className="game-over">{state.message}</div>}</div><div className="breaker-touch-controls" aria-label="Brick Blitz paddle controls"><button onClick={() => movePaddle(-12)} aria-label="Move paddle left">&lt; LEFT</button><button onClick={() => movePaddle(12)} aria-label="Move paddle right">RIGHT &gt;</button></div></GameFrame>
 }
 
 const symbols = ['✦','◆','●','▲','✚','☾']
