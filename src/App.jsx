@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import './birdstorm.css'
+import './snake-controls.css'
 
 const games = [
   { id: 'snake', icon: '◈', title: 'Neon Snake', tag: 'ARCADE', description: 'Eat, grow, and avoid the edge.', color: '#b5ff45' },
@@ -48,11 +49,12 @@ function Snake({ onScore }) {
   const [dir, setDir] = useState([1,0])
   const [running, setRunning] = useState(false)
   const [over, setOver] = useState(false)
+  const steer = (next) => setDir(current => next[0] === -current[0] && next[1] === -current[1] ? current : next)
   const reset = () => { setSnake([[8,8],[7,8],[6,8]]); setFood([13,5]); setDir([1,0]); setOver(false); setRunning(true) }
   useEffect(() => { const key = e => { const next = dirs[e.key]; if (!next) return; e.preventDefault(); setDir(d => next[0] === -d[0] && next[1] === -d[1] ? d : next) }; window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key) }, [])
   useEffect(() => { if (!running || over) return; const timer = setInterval(() => setSnake(old => { const head = [old[0][0] + dir[0], old[0][1] + dir[1]]; if (head[0] < 0 || head[0] > 15 || head[1] < 0 || head[1] > 15 || old.some(([x,y]) => x === head[0] && y === head[1])) { setOver(true); setRunning(false); onScore('snake', (old.length - 3) * 10); return old } const hit = head[0] === food[0] && head[1] === food[1]; const next = [head, ...old]; if (hit) { let f; do { f = [Math.floor(Math.random()*16), Math.floor(Math.random()*16)] } while(next.some(([x,y]) => x === f[0] && y === f[1])); setFood(f) } else next.pop(); return next }), 130); return () => clearInterval(timer) }, [running, over, dir, food, onScore])
   const score = (snake.length - 3) * 10
-  return <GameFrame title="NEON SNAKE" subtitle="ARROW KEYS / WASD TO STEER" score={score} onStart={reset} action={running ? 'RESTART' : over ? 'PLAY AGAIN' : 'START GAME'}><div className="snake-board">{Array.from({length:256}, (_,i) => { const x=i%16,y=Math.floor(i/16); const isSnake=snake.some(p=>p[0]===x&&p[1]===y); const isFood=food[0]===x&&food[1]===y; return <i key={i} className={(isSnake?'snake-cell ':'')+(isFood?'food':'')}/> })}</div>{over && <div className="game-over">RUN OVER</div>}</GameFrame>
+  return <GameFrame title="NEON SNAKE" subtitle="ARROW KEYS / WASD / TOUCH TO STEER" score={score} onStart={reset} action={running ? 'RESTART' : over ? 'PLAY AGAIN' : 'START GAME'}><div className="snake-board">{Array.from({length:256}, (_,i) => { const x=i%16,y=Math.floor(i/16); const isSnake=snake.some(p=>p[0]===x&&p[1]===y); const isFood=food[0]===x&&food[1]===y; return <i key={i} className={(isSnake?'snake-cell ':'')+(isFood?'food':'')}/> })}</div><div className="snake-touch-controls" aria-label="Snake direction controls"><button className="snake-up" onClick={() => steer([0,-1])} aria-label="Move up">^</button><button onClick={() => steer([-1,0])} aria-label="Move left">&lt;</button><button onClick={() => steer([0,1])} aria-label="Move down">v</button><button onClick={() => steer([1,0])} aria-label="Move right">&gt;</button></div>{over && <div className="game-over">RUN OVER</div>}</GameFrame>
 }
 
 function Breaker({ onScore }) {
